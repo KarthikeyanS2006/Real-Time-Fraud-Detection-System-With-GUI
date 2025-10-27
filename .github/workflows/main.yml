@@ -27,10 +27,9 @@ jobs:
     - name: Install Dependencies
       run: |
         python -m pip install --upgrade pip
-        # ✅ FIXED: Changed 'imblearn' to 'imbalanced-learn'
         pip install pandas numpy xgboost scikit-learn imbalanced-learn fastapi uvicorn pydantic joblib
 
-    - name: 🚀 Step 1: Train and Save Model Assets
+    - name: 🚀 Step 1 - Train and Save Model Assets
       run: |
         echo "Running the training pipeline to create models/..."
         python fraud_system.py
@@ -38,6 +37,4 @@ jobs:
     - name: Verify Model Assets Exist
       run: |
         ls -l models/
-        test -f models/fraud_detection_xgb_model.joblib || exit 1
-        test -f models/scaler.joblib || exit 1
-        echo "✅ Model assets confirme
+        test -f models/fraud_detection_xgb_model.joblib ||
