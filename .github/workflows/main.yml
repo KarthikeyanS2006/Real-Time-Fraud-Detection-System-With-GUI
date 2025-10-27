@@ -1,0 +1,67 @@
+name: Project Theta MLOps Demo
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        python-version: ["3.9"]
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install Dependencies
+      run: |
+        # Install core libraries, including the non-default ones like xgboost and imblearn
+        pip install pandas numpy xgboost scikit-learn imblearn fastapi uvicorn pydantic joblib
+
+    - name: 🚀 Step 1: Train and Save Model Assets (fraud_system.py)
+      run: |
+        echo "Running the training pipeline to create models/..."
+        python fraud_system.py
+        
+    - name: Verify Model Assets Exist
+      run: |
+        ls -l models/
+        test -f models/fraud_detection_xgb_model.joblib
+        test -f models/scaler.joblib
+        echo "✅ Model assets confirmed to be saved."
+
+    - name: 🧪 Step 2: Run API Smoke Test (Real-Time Inference Mock)
+      run: |
+        echo "Starting FastAPI service in background..."
+        # Start the FastAPI service in the background
+        uvicorn api_service:app --host 0.0.0.0 --port 8000 &
+        # Wait a moment for the server to start up
+        sleep 5 
+        
+        echo "Testing GREEN (ACCEPT) transaction..."
+        # Test a low-risk transaction (GREEN)
+        curl -X POST "http://0.0.0.0:8000/api/v1/predict_fraud" \
+             -H "Content-Type: application/json" \
+             --data-raw '{"user_id": "test_green", "amount": 300.0, "distance_from_last_tx": 0.1, "hour_of_day": 10, "count_tx_1h": 2}'
+        
+        echo "Testing RED (BLOCK) transaction..."
+        # Test a high-risk transaction (RED)
+        curl -X POST "http://0.0.0.0:8000/api/v1/predict_fraud" \
+             -H "Content-Type: application/json" \
+             --data-raw '{"user_id": "test_red", "amount": 95000.0, "distance_from_last_tx": 10.0, "hour_of_day": 3, "count_tx_1h": 15}'
+
+        echo "✅ API smoke test complete."
+
+    - name: 🛑 Workflow Finished
+      run: echo "Project Theta build and test workflow successfully completed."
