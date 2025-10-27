@@ -42,24 +42,25 @@ jobs:
         test -f models/scaler.joblib
         echo "✅ Model assets confirmed to be saved."
 
-    # NOTE: The previous error was likely here. We use 'set -x' for debugging
-    # and ensure the curl command is on a single, clean line.
     - name: 🧪 Step 2: Run API Smoke Test (Real-Time Inference Mock)
       run: |
-        set -x # Enable debugging output for this step
         echo "Starting FastAPI service in background..."
-        # Start the FastAPI service and detach it
+        # Start the FastAPI service in the background
         uvicorn api_service:app --host 0.0.0.0 --port 8000 &
         # Wait a moment for the server to start up
         sleep 5 
         
         echo "Testing GREEN (ACCEPT) transaction..."
         # Test a low-risk transaction (GREEN)
-        curl -X POST "http://0.0.0.0:8000/api/v1/predict_fraud" -H "Content-Type: application/json" -d '{"user_id": "test_green", "amount": 300.0, "distance_from_last_tx": 0.1, "hour_of_day": 10, "count_tx_1h": 2}'
+        curl -X POST "http://0.0.0.0:8000/api/v1/predict_fraud" \
+             -H "Content-Type: application/json" \
+             --data-raw '{"user_id": "test_green", "amount": 300.0, "distance_from_last_tx": 0.1, "hour_of_day": 10, "count_tx_1h": 2}'
         
         echo "Testing RED (BLOCK) transaction..."
         # Test a high-risk transaction (RED)
-        curl -X POST "http://0.0.0.0:8000/api/v1/predict_fraud" -H "Content-Type: application/json" -d '{"user_id": "test_red", "amount": 95000.0, "distance_from_last_tx": 10.0, "hour_of_day": 3, "count_tx_1h": 15}'
+        curl -X POST "http://0.0.0.0:8000/api/v1/predict_fraud" \
+             -H "Content-Type: application/json" \
+             --data-raw '{"user_id": "test_red", "amount": 95000.0, "distance_from_last_tx": 10.0, "hour_of_day": 3, "count_tx_1h": 15}'
 
         echo "✅ API smoke test complete."
 
