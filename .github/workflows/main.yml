@@ -26,7 +26,6 @@ jobs:
 
     - name: Install Dependencies
       run: |
-        # Install core libraries, including the non-default ones like xgboost and imblearn
         pip install pandas numpy xgboost scikit-learn imblearn fastapi uvicorn pydantic joblib
 
     - name: 🚀 Step 1: Train and Save Model Assets (fraud_system.py)
@@ -44,19 +43,15 @@ jobs:
     - name: 🧪 Step 2: Run API Smoke Test (Real-Time Inference Mock)
       run: |
         echo "Starting FastAPI service in background..."
-        # Start the FastAPI service in the background
         uvicorn api_service:app --host 0.0.0.0 --port 8000 &
-        # Wait a moment for the server to start up
         sleep 5 
         
         echo "Testing GREEN (ACCEPT) transaction..."
-        # Test a low-risk transaction (GREEN)
         curl -X POST "http://0.0.0.0:8000/api/v1/predict_fraud" \
              -H "Content-Type: application/json" \
              --data-raw '{"user_id": "test_green", "amount": 300.0, "distance_from_last_tx": 0.1, "hour_of_day": 10, "count_tx_1h": 2}'
         
         echo "Testing RED (BLOCK) transaction..."
-        # Test a high-risk transaction (RED)
         curl -X POST "http://0.0.0.0:8000/api/v1/predict_fraud" \
              -H "Content-Type: application/json" \
              --data-raw '{"user_id": "test_red", "amount": 95000.0, "distance_from_last_tx": 10.0, "hour_of_day": 3, "count_tx_1h": 15}'
